@@ -8,11 +8,11 @@ sidebar_position: 2
 
 > **Internal Financial Agents – Arquitectura Técnica**  
 > Guía de Referencia para Desarrolladores  
-> Marco Chavez – Rivka Technologies  
-> Última actualización: 18 de diciembre de 2025
+> Rivka Technologies  
+> Última actualización: 
 
 Documentación técnica completa para desarrolladores que trabajan en la plataforma **Internal Financial Agents (IFA)**.  
-Este documento replica la referencia de arquitectura original en formato web, alineada para impresión como PDF formal.
+Este documento replica la referencia de arquitectura original en formato web, alineada para impresión como PDF formal.s
 
 ---
 

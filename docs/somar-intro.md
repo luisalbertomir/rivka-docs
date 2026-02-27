@@ -9,7 +9,7 @@ sidebar_position: 1
 > **SOMAR App – Arquitectura de IA**  
 > Guía de Referencia para Desarrolladores  
 > Equipo de Desarrollo – Rivka Technologies  
-> Última actualización: 18 de diciembre de 2025
+> Última actualización: 
 
 Guía rápida de la arquitectura de IA para desarrolladores que trabajan en SOMAR App.  
 Este documento replica la **Referencia Técnica de Arquitectura de IA** original en formato web, optimizada para lectura en pantalla e impresión en PDF.
