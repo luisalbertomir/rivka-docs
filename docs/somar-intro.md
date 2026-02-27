@@ -60,27 +60,32 @@ SOMAR tiene tres sistemas de IA que necesitas conocer:
 
 ### 2.1. Diagrama de Arquitectura de Alto Nivel
 
-_Nota_: el diagrama original se muestra aquí como una descripción textual simplificada para evitar errores de renderizado al generar el PDF.
+```mermaid
+flowchart TD
+    Usuario["👤 Usuario"]
+    UI["UI SOMAR\n(React + TypeScript)"]
+    Controller["NaturalLanguageAnalyticsController\nManeja sesiones y mensajes"]
+    Orchestrator["OrchestratorAgent\nAnaliza consulta y coordina agentes"]
+    SqlAgent["SqlAgent\nGenera y ejecuta SQL"]
+    RagAgent["RagAgent\nBúsqueda semántica"]
+    Gemini["GeminiProvider\ngemma-3-27b-it"]
+    GeminiEmb["GeminiEmbeddingProvider\ntext-embedding-004"]
+    SQLite[("SQLite")]
+    ChromaDB[("ChromaDB\nAlmacén Vectorial")]
 
-```text
-Usuario → UI SOMAR (Frontend React + TypeScript)
-UI SOMAR → POST /api/analytics/query → NaturalLanguageAnalyticsController
-NaturalLanguageAnalyticsController → OrchestratorAgent
-
-OrchestratorAgent:
-- Decide si la consulta necesita SQL, RAG o ambos.
-- Llama a SqlAgent (para datos numéricos en la base operativa).
-- Llama a RagAgent (para contexto cualitativo en ChromaDB).
-
-SqlAgent → Base de datos operativa (por ejemplo SQLite).
-RagAgent → GeminiEmbeddingProvider → ChromaDB (colección somar_rag).
-
-GeminiProvider (Gemma 3 27B-IT):
-- Da soporte de LLM a OrchestratorAgent y RagAgent.
-
-Respuesta final:
-OrchestratorAgent → NaturalLanguageAnalyticsController → UI SOMAR → Usuario.
+    Usuario --> UI
+    UI -->|"POST /api/analytics/query"| Controller
+    Controller --> Orchestrator
+    Orchestrator -->|"si needs_sql"| SqlAgent
+    Orchestrator -->|"si needs_rag"| RagAgent
+    SqlAgent --> Gemini
+    SqlAgent --> SQLite
+    RagAgent --> GeminiEmb
+    GeminiEmb --> ChromaDB
+    Orchestrator --> Gemini
 ```
+
+_Nota_: el diagrama original se muestra aquí como una descripción textual simplificada para evitar errores de renderizado al generar el PDF.
 
 ### 2.2. Resumen de Componentes
 
@@ -179,6 +184,14 @@ El sistema implementa una arquitectura multi‑agente para manejo de consultas c
 
 #### 3.3.1. `OrchestratorAgent`
 
+```mermaid
+flowchart TD
+    A["1. Analizar Consulta con Gemma 3"] --> B["2. Decidir: SQL, RAG o Ambos"]
+    B --> C["3. Llamar SqlAgent y/o RagAgent"]
+    C --> D["4. Sintetizar Respuesta"]
+    D --> E["5. Determinar Config. de Gráfico"]
+```
+
 `OrchestratorAgent` es el coordinador principal que:
 
 1. Analiza la consulta del usuario y el historial de conversación.
@@ -243,6 +256,50 @@ Ejemplo de formato de contexto:
 `OrchestratorAgent` decide automáticamente qué agentes usar para cada consulta.  
 No existe un *router* separado: todo el enrutamiento es interno al orquestador.
 
+### 3.5. Proveedores LLM
+
+#### 3.5.1. `GeminiProvider`
+
+- **Endpoint API:** `generativelanguage.googleapis.com/v1beta`
+- **Modelo por defecto:** `gemma-3-27b-it`
+- **Formatos:** Texto plano y JSON estructurado
+- **Auth:** Clave API desde `GEMINI_API_KEY`
+
+#### 3.5.2. `GeminiEmbeddingProvider`
+
+- **Modelo:** `text-embedding-004`
+- **Salida:** Representación vectorial densa
+- **Lote:** Procesamiento secuencial (sin endpoint batch nativo)
+
+### 3.6. Almacén Vectorial: ChromaDB
+```mermaid
+flowchart LR
+    App["Laravel App"]
+    Chroma[("ChromaDB\nAPI HTTP :8000\nColección: somar_rag\nSimilitud Coseno HNSW")]
+
+    App -->|"Upsert\n(id, vector, metadata)"| Chroma
+    App -->|"Query\n(vector, topK)"| Chroma
+```
+
+Endpoints API utilizados:
+
+- `GET /api/v2/.../collections/{name}` — Obtener colección
+- `POST /api/v2/.../collections` — Crear colección
+- `POST /api/v2/.../collections/{id}/upsert` — Insertar vectores
+- `POST /api/v2/.../collections/{id}/query` — Búsqueda por similitud
+- `POST /api/v2/.../collections/{id}/delete` — Eliminar vectores
+
+### 3.7. Servicio de Sincronización de Base de Datos
+
+El `DatabaseSyncService` llena el almacén vectorial con registros de la base de datos:
+
+| Modelo     | Formato ID          | Plantilla de Texto                                              |
+| ---------- | ------------------- | --------------------------------------------------------------- |
+| Producto   | `products_{id}`     | Nombre, SKU, Código, Presentación, Descripción, Marca, División |
+| Sucursal   | `branches_{id}`     | Nombre, Código, Mayorista                                       |
+| Empresa    | `companies_{id}`    | Nombre                                                          |
+| Mayorista  | `wholesalers_{id}`  | Nombre                                                          |
+
 ---
 
 ## 4. Servicio de Pronóstico de Demanda
@@ -251,18 +308,17 @@ El sistema de pronóstico de demanda proporciona gestión inteligente de inventa
 
 ### 4.1. Visión General de Arquitectura
 
-```text
-Componentes principales:
-- DemandForecastService (Laravel PHP).
-- Script Prophet (Python 3).
-- Modelo de base de datos DemandForecast.
+```mermaid
+flowchart TD
+    Service["DemandForecastService\nLaravel PHP"]
+    Prophet["Script Prophet\nPython 3"]
+    HoltWinters["Holt-Winters\nRespaldo PHP"]
+    Model[("DemandForecast\nModelo de BD")]
 
-Flujo:
-1. DemandForecastService prepara los datos históricos de ventas e inventario.
-2. El servicio genera un archivo JSON de entrada (`sales_data.json`).
-3. Laravel invoca el script `prophet_forecast.py` pasando ruta de entrada, salida, días a predecir y tiempo de entrega.
-4. El script Prophet devuelve un JSON con pronósticos, bandas de confianza y stock de seguridad.
-5. DemandForecastService guarda los resultados en el modelo `DemandForecast` y los expone al frontend.
+    Service -->|"Primario"| Prophet
+    Service -->|"Respaldo"| HoltWinters
+    Prophet --> Model
+    HoltWinters --> Model
 ```
 
 ### 4.2. Configuración de Algoritmos
@@ -444,15 +500,18 @@ El sistema de detección de anomalías monitorea automáticamente las ventas e i
 
 ### 9.1. Visión General de Arquitectura
 
-```text
-Flujo general del sistema:
+```mermaid
+flowchart TD
+    Job["RunAnomalyDetection\nJob en Cola\n⏰ Diario 02:00"]
+    Service["AnomalyDetectionService\nAnálisis Estadístico"]
+    Controller["AnomalyController\nAPI REST"]
+    Notif["AnomalyDetectedNotification\nEmail + Dashboard"]
+    DB[("Base de Datos\nAnomalías")]
 
-- Job en cola `RunAnomalyDetection` ejecutado según la programación configurada.
-- El job invoca `AnomalyDetectionService`, que lee datos históricos de ventas e inventarios.
-- El servicio calcula medias móviles, desviaciones estándar y factores de desviación.
-- Los resultados se guardan en la tabla de anomalías de la base de datos.
-- `AnomalyController` expone una API REST para listar, filtrar y actualizar anomalías.
-- `AnomalyDetectedNotification` envía notificaciones al dashboard y, opcionalmente, por email.
+    Job -->|"Ejecuta"| Service
+    Service --> DB
+    DB --> Controller
+    DB --> Notif
 ```
 
 ### 9.2. Estructura de Directorios

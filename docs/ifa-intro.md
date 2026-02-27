@@ -74,31 +74,28 @@ La plataforma **Internal Financial Agents** es una aplicación de gestión finan
 ## 2. Visión General de la Arquitectura
 
 ### 2.1. Arquitectura de Alto Nivel del Sistema
+```mermaid
+flowchart TD
+    Frontend["Frontend (React 19 + Vite)\nLogin • Dashboard • AI Chat • Reports • Users"]
+    APILayer["API Service Layer\nfetchWithAuth() + Token Refresh"]
+    Express["Express 5 Server\nSecurity • CORS • Rate Limiting"]
+    Routes["Routes\n/auth • /users • /quickbooks • /bank • /ai"]
+    Controllers["Controllers\nauth • user • quickbooks • bank • ai"]
+    Services["Services\nAI • AR Report • Mercury • Brex • QuickBooks • Auth"]
+    Prisma["Prisma ORM"]
+    DB[("PostgreSQL (Neon)")]
+    ExtAPIs["External APIs\nMercury • Brex • QuickBooks"]
+    Gemini["Google Gemini\nAI / LLM"]
 
-_Nota_: el diagrama de la documentación original se representa aquí como texto estructurado para evitar errores de renderizado al imprimir.
-
-```text
-Frontend (React 19 + Vite):
-- Páginas: Login, Dashboard, AI Chat, Reports, Users.
-- Capa API Service Layer con fetchWithAuth y refresh automático de token.
-
-Flujo principal:
-Usuario → Frontend (página correspondiente) → API Service Layer
-API Service Layer → Servidor Express 5 (backend)
-
-Backend Express 5:
-- Rutas: /auth, /users, /quickbooks, /bank, /ai.
-- Controladores: auth, user, quickbooks, bank, ai.
-- Servicios: AI, AR Report, Mercury, Brex, QuickBooks, Auth.
-- ORM: Prisma → Base de datos PostgreSQL (Neon).
-
-Integraciones externas:
-- Mercury (cuentas y tesorería).
-- Brex (tarjetas corporativas).
-- QuickBooks (contabilidad).
-
-Servicio de IA:
-Servicios de backend → Google Gemini 2.5 Flash para chat y análisis financiero.
+    Frontend --> APILayer
+    APILayer --> Express
+    Express --> Routes
+    Routes --> Controllers
+    Controllers --> Services
+    Services --> Prisma
+    Prisma --> DB
+    Services --> ExtAPIs
+    Services --> Gemini
 ```
 
 ### 2.2. Resumen de Componentes
@@ -175,6 +172,38 @@ frontend/
 La base de datos usa **PostgreSQL** alojado en Neon, con **Prisma ORM** para consultas tipadas.
 
 ### 4.1. Visión General de Relaciones entre Entidades
+```mermaid
+erDiagram
+    User ||--o{ ARReport : "generates"
+    User ||--o{ AuditLog : "creates"
+    User ||--o{ ChatConversation : "owns"
+    ChatConversation ||--o{ ChatMessage : "contains"
+    User ||--o{ RefreshToken : "has"
+    User ||--o| QuickBooksToken : "has"
+
+    User {
+        uuid id
+        string username
+        enum role
+        enum status
+    }
+    ARReport {
+        uuid id
+        json reportData
+        string filename
+    }
+    ChatConversation {
+        uuid id
+        string title
+        uuid userId
+    }
+    ChatMessage {
+        uuid id
+        string role
+        text content
+        json metadata
+    }
+```
 
 Entidades principales:
 
@@ -254,6 +283,26 @@ El sistema de autenticación utiliza tokens basados en **JWT** con actualizació
 5. El cliente guarda los tokens en `localStorage`.  
 6. Todas las peticiones API incluyen `Authorization: Bearer <accessToken>`.  
 7. Ante un `401`, el cliente actualiza automáticamente usando el token de actualización.
+
+```mermaid
+sequenceDiagram
+    participant U as Usuario
+    participant F as Frontend
+    participant B as Backend
+    participant DB as Base de Datos
+
+    U->>F: Ingresa credenciales
+    F->>B: POST /api/auth/login
+    B->>B: bcrypt.compare()
+    B->>DB: Guarda refresh token
+    B-->>F: accessToken + refreshToken
+    F->>F: Guarda en localStorage
+    F->>B: GET /api/... (Bearer token)
+    B-->>F: 401 Token expirado
+    F->>B: POST /api/auth/refresh
+    B-->>F: Nuevo accessToken
+    F->>B: Reintenta petición original
+```
 
 ### 5.3. Requisitos de Contraseña
 
@@ -385,25 +434,25 @@ El servicio de IA en `ai.service.js` (≈1280 líneas) potencia la funcionalidad
 
 ### 7.1. Pipeline de Procesamiento en Tres Pasos
 
+
+```mermaid
+flowchart TD
+    Input["Pregunta del Usuario"]
+    Step0["Paso 0: selectResources()\nClasifica si es financiera\nDecide: reportes, transacciones o ambos\nDefine días y compañías"]
+    Step1["Paso 1: selectRelevantReports()\nModelo rápido selecciona\nreportes AR relevantes"]
+    Step2["Paso 2: chatAboutReports()\nModelo principal genera\nrespuesta con contexto"]
+    Output["Respuesta + datos para visualización"]
+
+    Input --> Step0
+    Step0 -->|"needs_reports?"| Step1
+    Step0 -->|"needs_transactions?"| Step2
+    Step1 --> Step2
+    Step2 --> Output
+```
+
 1. `selectResources()` determina qué datos se necesitan (reportes históricos, transacciones).  
 2. `selectRelevantReports()` usa un modelo rápido para seleccionar reportes relevantes.  
 3. `chatAboutReports()` llama al modelo principal para responder usando esos datos.
-
-```text
-Paso 0 – selectResources():
-- Clasifica si la pregunta es financiera.
-- Decide si necesita reportes AR, transacciones o ambos.
-- Define días de transacciones y compañías relevantes (Rivka, Ratespot, etc.).
-
-Paso 1 – selectRelevantReports():
-- Usa un modelo rápido para elegir qué reportes AR históricos son más relevantes.
-- Devuelve una lista de IDs de reportes a incluir en el contexto.
-
-Paso 2 – chatAboutReports():
-- Construye el *prompt* con los reportes y/o transacciones seleccionadas.
-- Llama a Gemini 2.5 Flash para generar la respuesta.
-- Devuelve texto final y, cuando aplica, datos estructurados para visualizaciones.
-```
 
 ### 7.2. Esquema de Selección de Recursos
 
@@ -794,5 +843,4 @@ Almacenar `reportData` como JSON permite:
 
 ---
 
-Este documento está optimizado para que, al imprimirlo, obtengas un **PDF formal** de Internal Financial Agents, alineado con la documentación original pero mantenido desde este sitio de documentación técnico.
 
