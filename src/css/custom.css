@@ -1,0 +1,179 @@
+/**
+ * Any CSS included here will be global. The classic template
+ * bundles Infima by default. Infima is a CSS framework designed to
+ * work well for content-centric websites.
+ */
+
+/* You can override the default Infima variables here. */
+:root {
+  --ifm-color-primary: #2e8555;
+  --ifm-color-primary-dark: #29784c;
+  --ifm-color-primary-darker: #277148;
+  --ifm-color-primary-darkest: #205d3b;
+  --ifm-color-primary-light: #33925d;
+  --ifm-color-primary-lighter: #359962;
+  --ifm-color-primary-lightest: #3cad6e;
+  --ifm-code-font-size: 95%;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
+}
+
+/* For readability concerns, you should choose a lighter palette in dark mode. */
+[data-theme='dark'] {
+  --ifm-color-primary: #25c2a0;
+  --ifm-color-primary-dark: #21af90;
+  --ifm-color-primary-darker: #1fa588;
+  --ifm-color-primary-darkest: #1a8870;
+  --ifm-color-primary-light: #29d5b0;
+  --ifm-color-primary-lighter: #32d8b4;
+  --ifm-color-primary-lightest: #4fddbf;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+}
+/* 1. Importamos ambas fuentes desde Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=EB+Garamond:ital,wght@0,400;0,700;1,400&display=swap');
+
+/* 2. CONFIGURACIÓN PARA LA WEB (PANTALLA) */
+:root {
+  --ifm-font-family-base: 'Inter', sans-serif;
+  --ifm-heading-font-family: 'Inter', sans-serif;
+}
+
+/* 3. CONFIGURACIÓN PARA EL PDF (IMPRESIÓN) */
+@media print {
+  :root {
+    --ifm-font-family-base: 'EB Garamond', serif;
+    --ifm-heading-font-family: 'EB Garamond', serif;
+  }
+
+  /* Página en blanco, sin fondos raros */
+  html,
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  body {
+    font-size: 11pt;
+    line-height: 1.6;
+    margin: 1.5cm;
+  }
+
+  /* Ocultar elementos de navegación que no sirven en un PDF */
+  .navbar,
+  .footer,
+  .theme-doc-sidebar-container,
+  .theme-doc-toc-desktop {
+    display: none !important;
+  }
+
+  /* Que el contenido ocupe todo el ancho disponible en el PDF */
+  .main-wrapper,
+  .container,
+  .row {
+    max-width: 100% !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Encabezados más elegantes para reporte */
+  .markdown h1 {
+    font-size: 20pt;
+    margin-bottom: 0.5cm;
+    border-bottom: 1px solid #999;
+    padding-bottom: 0.2cm;
+  }
+
+  .markdown h2 {
+    font-size: 16pt;
+    margin-top: 0.8cm;
+    margin-bottom: 0.3cm;
+  }
+
+  .markdown h3 {
+    font-size: 13pt;
+    margin-top: 0.6cm;
+    margin-bottom: 0.2cm;
+  }
+
+  /* Evitar cortes feos entre secciones */
+  h1, h2, h3 {
+    page-break-after: avoid;
+    page-break-inside: avoid;
+  }
+
+  p, ul, ol, table {
+    page-break-inside: avoid;
+  }
+
+  /* Código y bloques mermaid más compactos */
+  pre,
+  code {
+    font-size: 9pt !important;
+    background: #f5f5f5 !important;
+  }
+  /* Ocultar la miga de pan y cabecera de docs */
+  .breadcrumbs,
+  .theme-doc-breadcrumbs,
+  .theme-doc-breadcrumbs__item,
+  .theme-doc-breadcrumbs__link {
+    display: none !important;
+  }
+
+  /* Saltos de página claros entre grandes secciones */
+  .markdown > h1:not(:first-child) {
+    page-break-before: always;
+  }
+
+  /* Ajustar espaciado para que el PDF sea más compacto y formal */
+  .markdown p,
+  .markdown ul,
+  .markdown ol {
+    margin-top: 0;
+    margin-bottom: 0.25cm;
+  }
+}
+
+
+/* Tipografía y jerarquía más formal */
+.markdown h1,
+.markdown h2,
+.markdown h3 {
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.markdown h1 {
+  font-size: 2.2rem;
+}
+
+.markdown h2 {
+  font-size: 1.8rem;
+  margin-top: 2.5rem;
+}
+
+.markdown h3 {
+  font-size: 1.4rem;
+  margin-top: 2rem;
+}
+
+/* Texto del cuerpo más limpio y legible */
+.markdown p,
+.markdown li {
+  font-size: 1rem;
+  line-height: 1.7;
+}
+
+/* Mejor uso del ancho de lectura */
+.main-wrapper .container {
+  max-width: 900px;
+}
+
+/* Paleta un poco más sobria para un look corporativo */
+:root {
+  --ifm-color-primary: #1f4e79;
+  --ifm-color-primary-dark: #173857;
+  --ifm-color-primary-darker: #122b42;
+  --ifm-color-primary-light: #285f93;
+  --ifm-color-primary-lighter: #3578b3;
+  --ifm-color-primary-lightest: #498fd0;
+}
