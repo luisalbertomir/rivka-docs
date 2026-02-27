@@ -8,7 +8,8 @@ const sidebars = {
       type: 'category',
       label: 'SOMAR App – Arquitectura de IA',
       items: [
-        'somar-intro', // Página principal SOMAR (PDF de Arquitectura de IA)
+        'somar-intro',  // Página principal SOMAR (PDF de Arquitectura de IA)
+        'somar-setup',  // Instalación y configuración
         // Aquí luego podrás agregar más docs de SOMAR, por ejemplo:
         // 'somar-modulo-analitica',
         // 'somar-pronostico-demanda',
@@ -25,6 +26,6 @@ const sidebars = {
       ],
     },
   ],
-};
+}
 
 export default sidebars;
